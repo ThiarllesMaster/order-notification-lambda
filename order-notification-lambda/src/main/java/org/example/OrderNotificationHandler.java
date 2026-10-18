@@ -4,6 +4,10 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 
@@ -15,6 +19,15 @@ public class OrderNotificationHandler  implements RequestHandler<DynamodbEvent, 
 
     private final String topicArn =
             System.getenv("SNS_TOPIC_ARN");
+
+    private final String eventBusName =
+            System.getenv("EVENT_BUS_NAME");
+
+    private final EventBridgeClient eventBridgeClient =
+            EventBridgeClient.builder()
+                    .region(Region.of(System.getenv("AWS_REGION")))
+                    .build();
+
 
     @Override
     public String handleRequest(
@@ -83,6 +96,25 @@ public class OrderNotificationHandler  implements RequestHandler<DynamodbEvent, 
 
             logger.log("Notificação SNS publicada para o pedido: "
                     + orderId + "\n");
+
+            /**
+             * send the event to Event Bridge the object follows the rules defined
+             */
+            PutEventsRequestEntry entry =
+                    PutEventsRequestEntry.builder()
+                            .eventBusName(eventBusName)
+                            .source("orders.service")
+                            .detailType("OrderCreated")
+                            .detail(message)
+                            .build();
+
+            PutEventsResponse response =
+                    eventBridgeClient.putEvents(
+                            PutEventsRequest.builder()
+                                    .entries(entry)
+                                    .build()
+                    );
+
         }
 
         return "Processing completed";

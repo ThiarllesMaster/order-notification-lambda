@@ -30,6 +30,12 @@
             <artifactId>aws-lambda-java-events</artifactId>
             <version>3.14.0</version>
         </dependency>
+        <!-- Dependency to Event Bridge -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>eventbridge</artifactId>
+            <version>${aws.sdk.version}</version>
+        </dependency>
 
         <!-- Cliente SNS: publicação de notificações -->
         <dependency>
